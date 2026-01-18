@@ -30,7 +30,7 @@ CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_cred
 
 app.config['SECRET_KEY'] = 'a_very_secret_key_change_this'
 # Ensure this matches your local PostgreSQL setup
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:quizapp123@localhost:5432/quiz_app_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:your_postgresql_password@localhost:5432/your_database_name'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
@@ -42,31 +42,31 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # --- NLTK SETUP (Run once) ---
-##try:
-##    nltk.data.find('corpora/wordnet')
-##    nltk.data.find('tokenizers/punkt')
-##    nltk.data.find('taggers/averaged_perceptron_tagger')
-##except LookupError:
-##    print("Downloading NLTK data...")
-##    nltk.download('wordnet')
-##    nltk.download('omw-1.4')
-##    nltk.download('punkt')
-##    nltk.download('averaged_perceptron_tagger')
-##    nltk.download('punkt_tab')
-##    nltk.download('averaged_perceptron_tagger_eng')
+try:
+    nltk.data.find('corpora/wordnet')
+    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('taggers/averaged_perceptron_tagger')
+except LookupError:
+    print("Downloading NLTK data...")
+    nltk.download('wordnet')
+    nltk.download('omw-1.4')
+    nltk.download('punkt')
+    nltk.download('averaged_perceptron_tagger')
+    nltk.download('punkt_tab')
+    nltk.download('averaged_perceptron_tagger_eng')
 
 # --- OAUTH SETUP ---
 oauth = OAuth(app)
 oauth.register(
     name='google',
-    client_id='373726416806-ck4hdcrrihe4jb5b2j19jlis26r83lpu.apps.googleusercontent.com',
-    client_secret='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', 
+    client_id='enter_client_id_made_using_google_cloud_console',
+    client_secret='Genter_client_secret_made_using_google_cloud_console', 
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid email profile'},
 )
 
 # ==========================================
-# 1. DATABASE MODELS (UPDATED)
+# 1. DATABASE MODELS
 # ==========================================
 
 class User(UserMixin, db.Model):
@@ -93,13 +93,12 @@ class Quiz(db.Model):
     
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# --- NEW TABLE: QUIZ RESULTS ---
 class QuizResult(db.Model):
     __tablename__ = 'quiz_results'
     
     id = db.Column(db.Integer, primary_key=True)
     score = db.Column(db.String(20), nullable=False) # Stores "4/5"
-    # --- NEW COLUMN ---
+
     user_answers = db.Column(db.Text, nullable=True)
     
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -119,10 +118,9 @@ def load_user(user_id):
 # ==========================================
 # 2. NLP LOGIC (The Brains)
 # ==========================================
-# ... (Keep all your existing NLP functions: get_text_from_file, get_wikipedia_summary, etc. exactly as they are) ...
-# I am omitting them here for brevity, but DO NOT DELETE THEM from your file.
+
 def get_text_from_file(file_path, ext):
-    # ... (Your existing code)
+
     text = ""
     try:
         if ext == 'pdf':
@@ -148,7 +146,7 @@ def get_wikipedia_summary(topic):
     return None
 
 def get_distractors_wordnet(word):
-    # ... (Your existing code)
+    
     distractors = set()
     synsets = wn.synsets(word)
     if not synsets: return []
@@ -280,7 +278,7 @@ def index():
 @app.route('/api/generate', methods=['POST'])
 @login_required
 def generate_quiz_route():
-    # ... (Your existing generation code) ...
+    
     try:
         active_tab = request.form.get('activeTab') 
         count = int(request.form.get('questionCount', 5))
@@ -307,7 +305,7 @@ def generate_quiz_route():
 
         if not text_content: return jsonify({"message": "Error"}), 400
 
-        # Note: You should use your full generate_questions_pke function here
+        
         questions_list = generate_questions_pke(text_content, count, difficulty) 
         
         unique_code = generate_unique_code()
@@ -409,7 +407,7 @@ def get_result_details(result_id):
         "user_answers": user_answers # Sending selections to frontend
     }), 200
 
-# --- UPDATED DASHBOARD ROUTE ---
+# --- DASHBOARD ROUTE ---
 @app.route('/api/dashboard', methods=['GET'])
 @login_required
 def get_dashboard_data():
@@ -545,7 +543,7 @@ def google_callback():
     return redirect('http://localhost:3000/dashboard') 
 
 if __name__ == '__main__':
-    #with app.app_context():
+    with app.app_context():
         #db.drop_all() # Only use if you want to wipe data
-        #db.create_all() # This will create the new 'quiz_results' table
+        db.create_all() # This will create the tables
     app.run(debug=True, port=5000)
